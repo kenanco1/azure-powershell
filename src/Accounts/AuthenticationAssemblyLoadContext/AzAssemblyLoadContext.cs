@@ -19,7 +19,11 @@ using System.Runtime.Loader;
 
 namespace Microsoft.Azure.PowerShell.AuthenticationAssemblyLoadContext
 {
-    internal class AzAssemblyLoadContext : CachedAssemblyLoadContext
+    /// <summary>
+    /// Assembly load context of a service module.
+    /// The way of looking for assemblies is based on directory.
+    /// </summary>
+    internal class AzAssemblyLoadContext : AzAssemblyLoadContextBase
     {
         private string AssemblyDirectory { get; set; }
 

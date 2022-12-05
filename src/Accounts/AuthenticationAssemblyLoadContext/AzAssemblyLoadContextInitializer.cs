@@ -66,9 +66,7 @@ namespace Microsoft.Azure.PowerShell.AuthenticationAssemblyLoadContext
         {
             if (AzSharedAssemblyMap.TryGetValue(assemblyName.Name, out var azSharedAssembly) && azSharedAssembly.Version >= assemblyName.Version)
             {
-                // todo: how to leverage assembly cache of AzALC?
                 return AzAssemblyLoadContext.GetForDirectory(AzSharedAssemblyLoadContext.Key).LoadFromAssemblyName(assemblyName);
-                //return AzAssemblyLoadContext.GetForDirectory(AzSharedAssemblyLoadContext.Key).LoadFromAssemblyPath(azSharedAssembly.Path);
             }
 
             if (ModuleAlcEntryAssemblyMap.TryGetValue(assemblyName.Name, out string moduleLoadContextDirectory))
