@@ -14,34 +14,31 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Loader;
+using Microsoft.Azure.PowerShell.AssemblyLoading;
 
 namespace Microsoft.Azure.PowerShell.AuthenticationAssemblyLoadContext
 {
     public static class AzAssemblyLoadContextInitializer
     {
-        private static string AzSharedAssemblyDirectory { get; set; }
-        private static ConcurrentDictionary<string, Version> AzSharedAssemblyMap { get; set; }
+        /// <summary>
+        /// The root directory containing assemblies shared by Az modules.
+        /// </summary>
+        /// <remarks>
+        /// Though the value was intended to be combined with assembly name and work out its full path,
+        /// now with <see cref="ConditionalAssemblyProvider"/> we no longer need to calculate it.
+        /// So the only purpose left is to identify this special shared ALC.
+        /// </remarks>
+        //private static string AzSharedAssemblyDirectory { get; set; }
+        private static ConcurrentDictionary<string, (string Path, Version Version)> AzSharedAssemblyMap { get; set; }
         private static ConcurrentDictionary<string, string> ModuleAlcEntryAssemblyMap { get; set; }
 
         static AzAssemblyLoadContextInitializer()
         {
-            //TODO: Generate assembly version info into AzSharedAssemblies.json during build
-            var azSharedAssemblies = new Dictionary<string, Version>()
-            {
-                {"Azure.Core", new Version("1.25.0.0")},
-                {"Azure.Identity", new Version("1.6.1.0")},
-                {"Microsoft.Bcl.AsyncInterfaces", new Version("1.1.1.0")},
-                {"Microsoft.Identity.Client", new Version("4.46.2.0") },
-                {"Microsoft.Identity.Client.Extensions.Msal", new Version("2.23.0.0") },
-                {"Microsoft.IdentityModel.Abstractions", new Version("6.22.1.0") },
-                {"System.Memory.Data", new Version("1.0.2.0")},
-                {"System.Text.Json", new Version("4.0.1.2")},
-            };
+            var azSharedAssemblies = ConditionalAssemblyProvider.GetAssemblies();
 
-            AzSharedAssemblyMap = new ConcurrentDictionary<string, Version>(azSharedAssemblies, StringComparer.OrdinalIgnoreCase);
+            AzSharedAssemblyMap = new ConcurrentDictionary<string, (string, Version)>(azSharedAssemblies, StringComparer.OrdinalIgnoreCase);
 
             ModuleAlcEntryAssemblyMap = new ConcurrentDictionary<string, string>();
         }
@@ -49,10 +46,9 @@ namespace Microsoft.Azure.PowerShell.AuthenticationAssemblyLoadContext
         /// <summary>
         /// Registers the shared ALC and listen to assembly resolving event of the default ALC.
         /// </summary>
-        /// <param name="azSharedAssemblyDirectory">Root directory to look for assemblies.</param>
-        public static void RegisterAzSharedAssemblyLoadContext(string azSharedAssemblyDirectory)
+        public static void RegisterAzSharedAssemblyLoadContext()
         {
-            AzSharedAssemblyDirectory = azSharedAssemblyDirectory;
+            //AzSharedAssemblyDirectory = azSharedAssemblyDirectory;
             AssemblyLoadContext.Default.Resolving += Default_Resolving;
         }
 
@@ -68,9 +64,11 @@ namespace Microsoft.Azure.PowerShell.AuthenticationAssemblyLoadContext
 
         private static System.Reflection.Assembly Default_Resolving(AssemblyLoadContext context, System.Reflection.AssemblyName assemblyName)
         {
-            if (AzSharedAssemblyMap.ContainsKey(assemblyName.Name) && AzSharedAssemblyMap[assemblyName.Name] >= assemblyName.Version)
+            if (AzSharedAssemblyMap.TryGetValue(assemblyName.Name, out var azSharedAssembly) && azSharedAssembly.Version >= assemblyName.Version)
             {
-                return AzAssemblyLoadContext.GetForDirectory(AzSharedAssemblyDirectory).LoadFromAssemblyName(assemblyName);
+                // todo: how to leverage assembly cache of AzALC?
+                return AzAssemblyLoadContext.GetForDirectory(AzSharedAssemblyLoadContext.Key).LoadFromAssemblyName(assemblyName);
+                //return AzAssemblyLoadContext.GetForDirectory(AzSharedAssemblyLoadContext.Key).LoadFromAssemblyPath(azSharedAssembly.Path);
             }
 
             if (ModuleAlcEntryAssemblyMap.TryGetValue(assemblyName.Name, out string moduleLoadContextDirectory))
