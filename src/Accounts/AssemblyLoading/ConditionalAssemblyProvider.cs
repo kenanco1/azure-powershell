@@ -16,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 
 namespace Microsoft.Azure.PowerShell.AssemblyLoading
 {
@@ -41,6 +40,7 @@ namespace Microsoft.Azure.PowerShell.AssemblyLoading
             _assemblies = new List<IConditionalAssembly>()
             {
                 // todo: add a tool to update assembly versions after replacing the assemblies. (Can it support newly introduced assemblies?)
+                // todo: consider moving the list to a standalone config file
                 #region AssemblyList
                 CreateAssembly("netcoreapp2.1", "Azure.Core", "1.25.0.0").WithPowerShellCore(),
                 CreateAssembly("netcoreapp2.1", "Microsoft.Identity.Client", "4.46.2.0").WithPowerShellCore(),

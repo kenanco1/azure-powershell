@@ -13,7 +13,7 @@ if ($PSEdition -eq 'Desktop') {
 else {
   try {
     Add-Type -Path ([System.IO.Path]::Combine($PSScriptRoot, "..", "Microsoft.Azure.PowerShell.AuthenticationAssemblyLoadContext.dll")) | Out-Null
-    Write-Debug "Registering Az shared AssemblyLoadContext for path: '$assemblyRootPath'."
+    Write-Debug "Registering Az shared AssemblyLoadContext."
     [Microsoft.Azure.PowerShell.AuthenticationAssemblyLoadContext.AzAssemblyLoadContextInitializer]::RegisterAzSharedAssemblyLoadContext()
     Write-Debug "AssemblyLoadContext registered."
   }

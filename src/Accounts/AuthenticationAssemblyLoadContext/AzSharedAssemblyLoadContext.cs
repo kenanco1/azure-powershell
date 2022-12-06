@@ -35,12 +35,13 @@ namespace Microsoft.Azure.PowerShell.AuthenticationAssemblyLoadContext
 
         public AzSharedAssemblyLoadContext() : base(Key)
         {
-            _assemblies = new ConcurrentDictionary<string, (string, Version)>(ConditionalAssemblyProvider.GetAssemblies());
+            _assemblies = new ConcurrentDictionary<string, (string, Version)>(ConditionalAssemblyProvider.GetAssemblies(), StringComparer.OrdinalIgnoreCase);
         }
 
         protected override Assembly LoadAfterCacheMiss(AssemblyName requestedAssemblyName)
         {
             if (_assemblies.TryGetValue(requestedAssemblyName.Name, out var assembly)
+                && assembly.Version >= requestedAssemblyName.Version
                 && File.Exists(assembly.Path))
             {
                 var loadedAssembly = LoadFromAssemblyPath(assembly.Path);
